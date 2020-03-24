@@ -4,7 +4,7 @@ import random
 class board:
     def __init__(self):
         self.positions = {1: "_", 2: "_", 3: "_", 4: "_", 5: "_",
-                          6: "_", 7: " ", 8: " ", 9: " "}
+                          6: "_", 7: "_", 8: "_", 9: "_"}
 
     def position_is_empty(self, pos):
         if pos < 7 and pos > 0:
@@ -184,7 +184,7 @@ def get_reply_tweet(the_game):
 
 playing = False
 old_id = 1
-newGame
+newGame = None
 
 def check_for_and_play_game(api):
     print("checking recent mentions...\n")
