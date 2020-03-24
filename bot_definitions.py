@@ -26,7 +26,7 @@ class board:
         #"\n__|___|__\n__|___|__\n  |   |  \n"
         theBoard = str("\n" + self.positions[1] + "_|_" + self.positions[2] + "_|_"
         + self.positions[3] + "\n" + self.positions[4] + "_|_" + self.positions[5] + "_|_"
-        + self.positions[6] + "\n" + self.positions[7] + " | " + self.positions[8] + " | "
+        + self.positions[6] + "\n" + self.positions[7] + "_|_" + self.positions[8] + "_|_"
         + self.positions[9] + "\n")
         return theBoard
 
@@ -184,11 +184,13 @@ def get_reply_tweet(the_game):
 
 playing = False
 old_id = 1
+newGame
 
 def check_for_and_play_game(api):
     print("checking recent mentions...\n")
     global playing
     global old_id
+    global newGame
     mention_tweets = api.mentions_timeline()
     latest_tweet = mention_tweets[0]
     curr_id = latest_tweet.id
