@@ -10,5 +10,5 @@ api = tweepy.API(auth)
 
 while True:
     check_for_and_play_game(api)
-    sleep(5)
+    sleep(2)
 #end main game loop

@@ -92,11 +92,15 @@ class game:
 
     def update_game(self, tweet_text):
         if self.the_board.parse_board(tweet_text) == 1:
-            pass
+            #cheat
+            self.cheat = True
+            return 1
         elif self.the_board.parse_board(tweet_text) == -1:
-            pass
+            #no move
+            self.no_move = True
+            return -1
         elif self.the_board.parse_board(tweet_text) == 0:
-            pass 
+            return 0
 
     def check_combo(self, combo):
         x = self.the_board.positions[combo[0]]
@@ -160,61 +164,66 @@ def get_reply_tweet(the_game):
             reply = str(the_game.get_board() + "Good game! " + the_game.winner + " is the winner!\n#tweettactoe")
     else:
         if the_game.first_move == True:
-            if the_game.cheat == True:
-                #cheat
-                pass
-            elif the_game.no_move = True:
-                #nomove
-                pass
-            else:
-                reply = str("copy everything from 'my move' to the end of the "
+            reply = str("copy everything from 'my move' to the end of the "
 + "tweet, make your move, and change the username at the end to @TweetTacToe_bot "
 + "to reply!\nmy move:" + the_game.get_board() + "your turn " + the_game.user + "!\n#tweettactoe")
             the_game.first_move = False
         else:
             if the_game.cheat == True:
                 #cheat
-                pass
-            elif the_game.no_move = True:
+                reply = str("You cheated! you can only make one move at a time,"
+                + " and can't change any old moves " + the_game.user + "!" +
+                "try again!\n#tweettactoe")
+            elif the_game.no_move == True:
                 #nomove
-                pass
+                reply = str(the_game.user + " , you didn't make a move!"
+                " Try again!\n#tweettactoe")
             else:
                 reply = str("my move: " + the_game.get_board() + "your turn " + the_game.user + "!\n#tweettactoe")
     return reply
 
 playing = False
+old_id = 1
 
 def check_for_and_play_game(api):
+    print("checking recent mentions...\n")
     global playing
+    global old_id
     mention_tweets = api.mentions_timeline()
-    curr_id = mention_tweets[0].id
     latest_tweet = mention_tweets[0]
+    curr_id = latest_tweet.id
+
 
     if old_id != curr_id:
         old_id = curr_id
         if ("let's play!" in latest_tweet.text or \
-        "Let's play!" in latest_tweet.text \
-        and "#tweettactoe" in latest_tweet.text:
+        "Let's play!" in latest_tweet.text) \
+        and "#tweettactoe" in (latest_tweet.text):
             if playing == False:
+                print("starting new game...\n")
                 newGame = game(str("@" + latest_tweet.user.screen_name))#figure out how to get user
                 newGame.make_move()
                 playing = True
+                print("tweeting move...\n")
                 api.update_status(get_reply_tweet(newGame))
             else:
                 api.update_status(str("Sorry, " + str("@" + latest_tweet.user.screen_name) +
-                ", I'm playing against someone, try again soon!"))
+                ", I'm playing against someone, try again soon!\n#tweettactoe"))
 
-        elif "your turn" in latest_tweet.text and \
-        "#tweettactoe" in latest_tweet.text and playing == True:
+        elif "your turn" in (latest_tweet.text) and \
+        "#tweettactoe" in (latest_tweet.text) and playing == True:
             if str("@" + latest_tweet.user.screen_name) == newGame.user:
                 if newGame.update_game(latest_tweet.text) == 0:
                     if newGame.game_over() == False:
                         newGame.make_move()
+                        print("tweeting move...\n")
                         api.update_status(get_reply_tweet(newGame))
                     else:
+                        print("tweeting winner...\n")
                         api.update_status(get_reply_tweet(newGame))
                         playing == False
                 else:
+                    print("tweeting error...\n")
                     api.update_status(get_reply_tweet(newGame))
 
         else:
