@@ -6,5 +6,5 @@ strategy to attempt to win every time. Hopefully that will come in a later versi
 
 To do:
 -error checking for user choosing same letter as bot.
--fix board formatting on Twitter, maybe try \t for the bottom row instead
- of a space or underscore to see if that fixes it.
+-after user's second move the game board gets extracted with no symbols in it 
+ and an extra line between the second and thrid line of the board - WHY?
