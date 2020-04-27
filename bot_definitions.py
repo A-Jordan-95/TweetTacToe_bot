@@ -3,16 +3,18 @@ import random
 
 class board:
     def __init__(self):
-        self.positions = {1: "_", 2: "_", 3: "_", 4: "_", 5: "_",
-                          6: "_", 7: " ", 8: " ", 9: " "}
+        self.positions = ['_' for x in range(0,8)]
+        for x in range (6,8):
+            self.positions[x] = ' '
+
 
     def position_is_empty(self, pos):
-        if pos < 7 and pos > 0:
+        if pos < 6 and pos >= 0:
             if self.positions[pos] == "_":
                 return True
             else:
                 return False
-        elif pos < 10:
+        elif pos < 9:
                 if self.positions[pos] == " ":
                     return True
                 else:
@@ -23,15 +25,20 @@ class board:
 
 
     def get_board(self):
-        theBoard = str("\n" + self.positions[1] + "_|_" + self.positions[2] + "_|_"
-        + self.positions[3] + "\n" + self.positions[4] + "_|_" + self.positions[5] + "_|_"
-        + self.positions[6] + "\n" + self.positions[7] + "  |  " + self.positions[8] + "  |  "
-        + self.positions[9] + "\n")
-        return theBoard
+        #theBoard = str("\n" + self.positions[1] + "_|_" + self.positions[2] + "_|_"
+        #+ self.positions[3] + "\n" + self.positions[4] + "_|_" + self.positions[5] + "_|_"
+        #+ self.positions[6] + "\n" + self.positions[7] + "  |  " + self.positions[8] + "  |  "
+        #+ self.positions[9] + "\n")
+        #return theBoard
+        return '\n'.join(
+            ['_|_'.join(self.positions[:2]),
+             '_|_'.join(self.positions[3:6]),
+             ' | '.join(self.positions[6:])]
+        )
 
     def num_differences(self, other_board):
         num_difs = 0
-        for i in range(1,9):
+        for i in range(0,8):
             if (self.positions[i] == 'x' or self.positions[i] == 'X') and \
             (other_board.positions[i] != 'x' and other_board.positions[i] != 'X'):
                 print("adding one to num_difs under x...\n")
@@ -47,16 +54,46 @@ class board:
         return num_difs
 
     def set_position(self, pos, char):
-        if pos > 0 and pos < 10:
+        if pos >= 0 and pos < 9:
             self.positions[pos] = char
         else:
             print("Error, invalid position.\n")
 
     def parse_board(self, tweet_text):
+        """
+        Expected tweet example:
+        my move:
+        __|___|__
+        __|___|__
+        X  |     |
+        your turn
+        @TweetTacToe_bot
+        !
+        #tweettactoe
+        """
+
         print("attempting to parse...\n")
         print("user's tweet:\n" + tweet_text + "\n")
-
         other_board = board()
+        first_board_line = None
+        lines = tweet_text.split('\n')
+        for lineno in enumerate(lines):
+            if 'my move' in lines:
+                first_board_line = lineno + 1
+
+        if first_board_line is None:
+            #return error to user: "my move" not found in tweet.
+            pass
+        else:
+            positions = []
+            for lineno in range(first_board_line, first_board_line + 3):
+                this_line = lines[lineno]
+                stripped_line = this_line.replace('_|_', '')
+                for current_pos in stripped_line:
+                    positions.append(current_pos)
+            other_board.positions = positions
+
+        """
         if tweet_text[0] == 'm' or tweet_text[0] == 'M':
             other_board.set_position(1, tweet_text[9])
             other_board.set_position(2, tweet_text[13])
@@ -77,6 +114,8 @@ class board:
             other_board.set_position(7, tweet_text[46])
             other_board.set_position(8, tweet_text[52])
             other_board.set_position(9, tweet_text[58])
+        """
+
         print("Game board extracted from user's tweet:\n" +
         other_board.get_board() + "\n")
         if self.num_differences(other_board) < 1:
@@ -94,8 +133,11 @@ class board:
 #end class baord
 
 class game:
-    winning_combos = [[1,2,3], [4,5,6], [7,8,9], [1,4,7], [2,5,8],
-    [3,6,9], [1,5,9], [3,5,7]]
+    #winning_combos = [[0,1,2], [3,4,5], [6,7,8], [0,3,6], [1,4,7],
+    #[2,5,8], [0,4,8], [2,4,6]]
+    row_combos = [[0,1,2], [3,4,5], [6,7,8]]
+    col_combos = [[0,3,6], [1,4,7], [2,5,8]]
+    diag_combos = [[0,4,8], [2,4,6]]
 
     def __init__(self, user):
         self.user = user
@@ -144,10 +186,92 @@ class game:
         else:
             return False
 
-    def is_winner(self):
-        for combo in self.winning_combos:
-            if self.check_combo(combo) == True:
+    def check_row_win(self):
+        for combo in self.row_combos:
+            if (self.the_board.positions[combo[0]] == 'x' \
+            or self.the_board.positions[combo[0]] == 'X') \
+            and (self.the_board.positions[combo[1]] == 'x' \
+            or self.the_board.positions[combo[1]] == 'X') \
+            and (self.the_board.positions[combo[2]] == 'x' \
+            or self.the_board.positions[combo[2]] == 'X'):
+                if self.x_or_o == 0:
+                    self.winner = "@TweetTacToe_bot"
+                else:
+                    self.winner = self.user
                 return True
+            elif (self.the_board.positions[combo[0]] == 'o' \
+            or self.the_board.positions[combo[0]] == 'O') \
+            and (self.the_board.positions[combo[1]] == 'o' \
+            or self.the_board.positions[combo[1]] == 'O') \
+            and (self.the_board.positions[combo[2]] == 'o' \
+            or self.the_board.positions[combo[2]] == 'O'):
+                if self.x_or_o == 1:
+                    self.winner = "@TweetTacToe_bot"
+                else:
+                    self.winner = self.user
+                return True
+
+        return False
+
+    def check_col_win(self):
+        for combo in self.col_combos:
+            if (self.the_board.positions[combo[0]] == 'x' \
+            or self.the_board.positions[combo[0]] == 'X') \
+            and (self.the_board.positions[combo[1]] == 'x' \
+            or self.the_board.positions[combo[1]] == 'X') \
+            and (self.the_board.positions[combo[2]] == 'x' \
+            or self.the_board.positions[combo[2]] == 'X'):
+                if self.x_or_o == 0:
+                    self.winner = "@TweetTacToe_bot"
+                else:
+                    self.winner = self.user
+                return True
+            elif (self.the_board.positions[combo[0]] == 'o' \
+            or self.the_board.positions[combo[0]] == 'O') \
+            and (self.the_board.positions[combo[1]] == 'o' \
+            or self.the_board.positions[combo[1]] == 'O') \
+            and (self.the_board.positions[combo[2]] == 'o' \
+            or self.the_board.positions[combo[2]] == 'O'):
+                if self.x_or_o == 1:
+                    self.winner = "@TweetTacToe_bot"
+                else:
+                    self.winner = self.user
+                return True
+
+        return False
+
+    def check_diag_win(self):
+        for combo in self.diag_combos:
+            if (self.the_board.positions[combo[0]] == 'x' \
+            or self.the_board.positions[combo[0]] == 'X') \
+            and (self.the_board.positions[combo[1]] == 'x' \
+            or self.the_board.positions[combo[1]] == 'X') \
+            and (self.the_board.positions[combo[2]] == 'x' \
+            or self.the_board.positions[combo[2]] == 'X'):
+                if self.x_or_o == 0:
+                    self.winner = "@TweetTacToe_bot"
+                else:
+                    self.winner = self.user
+                return True
+            elif (self.the_board.positions[combo[0]] == 'o' \
+            or self.the_board.positions[combo[0]] == 'O') \
+            and (self.the_board.positions[combo[1]] == 'o' \
+            or self.the_board.positions[combo[1]] == 'O') \
+            and (self.the_board.positions[combo[2]] == 'o' \
+            or self.the_board.positions[combo[2]] == 'O'):
+                if self.x_or_o == 1:
+                    self.winner = "@TweetTacToe_bot"
+                else:
+                    self.winner = self.user
+                return True
+
+        return False
+
+    def is_winner(self):
+        if self.check_row_win() == True \
+        or self.check_col_win() == True \
+        or self.check_diag_win() == True:
+            return True
 
         return False
 
