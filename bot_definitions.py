@@ -3,8 +3,8 @@ import random
 
 class board:
     def __init__(self):
-        self.positions = ['_' for x in range(0,8)]
-        for x in range (6,8):
+        self.positions = ['_' for x in range(0,9)]
+        for x in range (6,9):
             self.positions[x] = ' '
 
 
@@ -25,19 +25,32 @@ class board:
 
 
     def get_board(self):
-        #theBoard = str("\n" + self.positions[1] + "_|_" + self.positions[2] + "_|_"
-        #+ self.positions[3] + "\n" + self.positions[4] + "_|_" + self.positions[5] + "_|_"
-        #+ self.positions[6] + "\n" + self.positions[7] + "  |  " + self.positions[8] + "  |  "
-        #+ self.positions[9] + "\n")
-        #return theBoard
-        return '\n'.join(
-            ['_|_'.join(self.positions[:2]),
-             '_|_'.join(self.positions[3:6]),
-             ' | '.join(self.positions[6:])]
-        )
+        theBoard = str("\n" + self.positions[0] + "_|_" + self.positions[1] + "_|_"
+        + self.positions[2] + "\n" + self.positions[3] + "_|_" + self.positions[4] + "_|_"
+        + self.positions[5] + "\n" + self.positions[6] + "  |  " + self.positions[7] + "  |  "
+        + self.positions[8] + "\n")
+        return theBoard
+        #return '\n'.join(
+        #    [self.positions[0].join('_|_'),
+        #     self.positions[1].join('_|_'),
+        #     self.positions[2].join('\n'),
+        #     self.positions[3].join('_|_'),
+        #     self.positions[4].join('_|_'),
+        #     self.positions[5].join('\n'),
+        #     self.positions[6].join(' | '),
+        #     self.positions[7].join(' | '),
+        #     self.positions[8].join('\n')]
+        #)
 
     def num_differences(self, other_board):
         num_difs = 0
+        for posnum, pos in enumerate(self.positions):
+            print(f"self.positions[{posnum}]: {pos}\n")
+            print(f"other_board.positions[{posnum}]: {other_board.positions[posnum]}\n")
+            if pos != other_board.positions[posnum]:
+                num_difs += 1
+
+            """
         for i in range(0,8):
             if (self.positions[i] == 'x' or self.positions[i] == 'X') and \
             (other_board.positions[i] != 'x' and other_board.positions[i] != 'X'):
@@ -51,6 +64,7 @@ class board:
             (other_board.positions[i] != '_' and other_board.positions[i] != ' '):
                 print("adding one to num_difs under _...\n")
                 num_difs += 1
+            """
         return num_difs
 
     def set_position(self, pos, char):
@@ -77,51 +91,29 @@ class board:
         other_board = board()
         first_board_line = None
         lines = tweet_text.split('\n')
-        for lineno in enumerate(lines):
-            if 'my move' in lines:
+        for lineno, line in enumerate(lines):
+            if 'my move' in line:
                 first_board_line = lineno + 1
 
         if first_board_line is None:
             #return error to user: "my move" not found in tweet.
-            pass
+            print("'my move' not found in tweet.\n")
         else:
-            positions = []
+            otherpositions = []
             for lineno in range(first_board_line, first_board_line + 3):
                 this_line = lines[lineno]
                 stripped_line = this_line.replace('_|_', '')
                 for current_pos in stripped_line:
-                    positions.append(current_pos)
-            other_board.positions = positions
-
-        """
-        if tweet_text[0] == 'm' or tweet_text[0] == 'M':
-            other_board.set_position(1, tweet_text[9])
-            other_board.set_position(2, tweet_text[13])
-            other_board.set_position(3, tweet_text[17])
-            other_board.set_position(4, tweet_text[19])
-            other_board.set_position(5, tweet_text[23])
-            other_board.set_position(6, tweet_text[27])
-            other_board.set_position(7, tweet_text[29])
-            other_board.set_position(8, tweet_text[35])
-            other_board.set_position(9, tweet_text[41])
-        elif tweet_text[0] == '@':
-            other_board.set_position(1, tweet_text[26])
-            other_board.set_position(2, tweet_text[30])
-            other_board.set_position(3, tweet_text[34])
-            other_board.set_position(4, tweet_text[36])
-            other_board.set_position(5, tweet_text[40])
-            other_board.set_position(6, tweet_text[44])
-            other_board.set_position(7, tweet_text[46])
-            other_board.set_position(8, tweet_text[52])
-            other_board.set_position(9, tweet_text[58])
-        """
+                    otherpositions.append(current_pos)
+            other_board.positions = otherpositions
 
         print("Game board extracted from user's tweet:\n" +
         other_board.get_board() + "\n")
-        if self.num_differences(other_board) < 1:
+        numDif = self.num_differences(other_board)
+        if numDif < 1:
             print("Error: user did not make a move.\n")
             return -1
-        elif self.num_differences(other_board) > 1:
+        elif numDif > 1:
             print("Error: user made more than one move.\n")
             return 1
         else:
@@ -289,9 +281,9 @@ class game:
         return True
 
     def make_move(self):
-        rand_pos = random.randint(1, 9)
+        rand_pos = random.randint(0, 8)
         while self.the_board.position_is_empty(rand_pos) != True:
-            rand_pos = random.randint(1, 9)
+            rand_pos = random.randint(0, 8)
 
         if self.x_or_o == 0:
             self.the_board.set_position(rand_pos, 'X')
