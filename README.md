@@ -5,7 +5,6 @@ list of recent mentions. Version one also uses random placement for it's moves, 
 strategy to attempt to win every time. Hopefully that will come in a later version.
 
 To do:
--bot sometimes extracts game board wrong, missing the last position
--make sure num_differences() is working properly - fix any issues caused by this
-  function or becuase game board is not parsed correctly(to do list item above this one).
 -error checking for user choosing same letter as bot.
+-use MySQL to save game state of each user's game.
+    -maybe keep stats about past games to tell users?

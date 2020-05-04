@@ -89,6 +89,7 @@ class board:
         print("attempting to parse...\n")
         print("user's tweet:\n" + tweet_text + "\n")
         other_board = board()
+        print(f"size of other_board.positions: {len(other_board.positions)}\n")
         first_board_line = None
         lines = tweet_text.split('\n')
         for lineno, line in enumerate(lines):
@@ -102,10 +103,16 @@ class board:
             otherpositions = []
             for lineno in range(first_board_line, first_board_line + 3):
                 this_line = lines[lineno]
-                stripped_line = this_line.replace('_|_', '')
+                if '_|_' in this_line:
+                    stripped_line = this_line.replace('_|_', '')
+                else:
+                    stripped_line = this_line.replace('  |  ', '')
                 for current_pos in stripped_line:
+                    print(f"current_pos: {current_pos}\n")
                     otherpositions.append(current_pos)
             other_board.positions = otherpositions
+
+        print(f"size of other_board.positions: {len(other_board.positions)}\n")
 
         print("Game board extracted from user's tweet:\n" +
         other_board.get_board() + "\n")
@@ -294,9 +301,9 @@ class game:
 def get_reply_tweet(the_game):
     if the_game.game_over() == True:
         if the_game.tie == True:
-            reply = str(the_game.get_board() + "It's a tie! Good game!\n#tweettactoe")
+            reply = str(the_game.get_board() + the_game.user + " It's a tie! Good game!\n#tweettactoe")
         else:
-            reply = str(the_game.get_board() + "Good game! " + the_game.winner + " is the winner!\n#tweettactoe")
+            reply = str(the_game.get_board() + the_game.user + " good game! " + the_game.winner + " is the winner!\n#tweettactoe")
     else:
         if the_game.first_move == True:
             reply = str("copy everything from 'my move' to the end of the "
