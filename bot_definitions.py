@@ -51,12 +51,6 @@ class board:
                 num_difs += 1
         return num_difs
 
-    def set_position(self, pos, char):
-        if pos >= 0 and pos < 9:
-            self.positions[pos] = char
-        else:
-            print("Error, invalid position.\n")
-
     def parse_board(self, tweet_text):
         """
         Expected tweet example:
