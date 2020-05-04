@@ -67,7 +67,6 @@ class board:
         print("attempting to parse...\n")
         print("user's tweet:\n" + tweet_text + "\n")
         other_board = board()
-        print(f"size of other_board.positions: {len(other_board.positions)}\n")
         first_board_line = None
         lines = tweet_text.split('\n')
         for lineno, line in enumerate(lines):
@@ -86,11 +85,9 @@ class board:
                 else:
                     stripped_line = this_line.replace('  |  ', '')
                 for current_pos in stripped_line:
-                    print(f"current_pos: {current_pos}\n")
                     otherpositions.append(current_pos)
             other_board.positions = otherpositions
 
-        print(f"size of other_board.positions: {len(other_board.positions)}\n")
 
         print("Game board extracted from user's tweet:\n" +
         other_board.get_board() + "\n")
