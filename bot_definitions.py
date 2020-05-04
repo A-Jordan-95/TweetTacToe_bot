@@ -49,22 +49,6 @@ class board:
             print(f"other_board.positions[{posnum}]: {other_board.positions[posnum]}\n")
             if pos != other_board.positions[posnum]:
                 num_difs += 1
-
-            """
-        for i in range(0,8):
-            if (self.positions[i] == 'x' or self.positions[i] == 'X') and \
-            (other_board.positions[i] != 'x' and other_board.positions[i] != 'X'):
-                print("adding one to num_difs under x...\n")
-                num_difs += 1
-            elif (self.positions[i] == 'o' or self.positions[i] == 'O') and \
-            (other_board.positions[i] != 'o' and other_board.positions[i] != 'O'):
-                print("adding one to num_difs under o...\n")
-                num_difs += 1
-            elif (self.positions[i] == '_' or self.positions[i] == ' ') and \
-            (other_board.positions[i] != '_' and other_board.positions[i] != ' '):
-                print("adding one to num_difs under _...\n")
-                num_difs += 1
-            """
         return num_difs
 
     def set_position(self, pos, char):
@@ -132,8 +116,6 @@ class board:
 #end class baord
 
 class game:
-    #winning_combos = [[0,1,2], [3,4,5], [6,7,8], [0,3,6], [1,4,7],
-    #[2,5,8], [0,4,8], [2,4,6]]
     row_combos = [[0,1,2], [3,4,5], [6,7,8]]
     col_combos = [[0,3,6], [1,4,7], [2,5,8]]
     diag_combos = [[0,4,8], [2,4,6]]
