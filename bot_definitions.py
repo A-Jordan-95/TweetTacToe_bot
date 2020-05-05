@@ -42,16 +42,34 @@ class board:
         #     self.positions[8].join('\n')]
         #)
 
-    def num_differences(self, other_board):
+    def check_move(self, other_board, x_or_o):
         num_difs = 0
+        new_pos = 0
+        same_game_piece = False
         for posnum, pos in enumerate(self.positions):
             print(f"self.positions[{posnum}]: {pos}\n")
             print(f"other_board.positions[{posnum}]: {other_board.positions[posnum]}\n")
             if pos != other_board.positions[posnum]:
                 num_difs += 1
-        return num_difs
+                if new_pos == 0:
+                    new_pos = posnum
+                    if ((other_board.positions[new_pos] == 'x' or \
+                    other_board.positions[new_pos] == 'X') and x_or_o == 0) or \
+                    ((other_board.positions[new_pos] == 'o' or \
+                    other_board.positions[new_pos] == 'O') and x_or_o == 1):
+                        same_game_piece = True
 
-    def parse_board(self, tweet_text):
+        if same_game_piece == True:
+            return 2
+        if num_difs > 1:
+            return 1
+        elif num_difs < 1:
+            return -1
+        elif num_difs == 1:
+            return 0
+
+
+    def parse_board(self, tweet_text, x_or_o):
         """
         Expected tweet example:
         my move:
@@ -91,14 +109,17 @@ class board:
 
         print("Game board extracted from user's tweet:\n" +
         other_board.get_board() + "\n")
-        numDif = self.num_differences(other_board)
-        if numDif < 1:
+        moveCheck = self.check_move(other_board, x_or_o)
+        if moveCheck < 0:
             print("Error: user did not make a move.\n")
             return -1
-        elif numDif > 1:
+        elif moveCheck > 1:
+            print("Error: user chose same game piece as bot.\n")
+            return 2
+        elif moveCheck == 1:
             print("Error: user made more than one move.\n")
             return 1
-        else:
+        elif moveCheck == 0:
             print("Proper num of moves detected.\n")
             self.positions = other_board.positions #update the current board
             return 0
@@ -121,9 +142,10 @@ class game:
         self.the_board = board()
         self.cheat = False
         self.no_move = False
+        self.same_piece = False
 
     def update_game(self, tweet_text):
-        ret = self.the_board.parse_board(tweet_text)
+        ret = self.the_board.parse_board(tweet_text, self.x_or_o)
         if ret  == 1:
             #cheat
             self.cheat = True
@@ -132,6 +154,10 @@ class game:
             #no move
             self.no_move = True
             return -1
+        elif ret == 2:
+            #same game piece
+            self.same_piece = True
+            return 2
         elif ret == 0:
             return 0
 
@@ -266,17 +292,23 @@ class game:
             rand_pos = random.randint(0, 8)
 
         if self.x_or_o == 0:
-            self.the_board.set_position(rand_pos, 'X')
+            self.the_board.positions[rand_pos] = 'X'
         elif self.x_or_o == 1:
-            self.the_board.set_position(rand_pos, 'O')
+            self.the_board.positions[rand_pos] = 'O'
 #end class game
 
+playing = False
+old_id = 1
+newGame = None
+
 def get_reply_tweet(the_game):
+    global playing
     if the_game.game_over() == True:
         if the_game.tie == True:
             reply = str(the_game.get_board() + the_game.user + " It's a tie! Good game!\n#tweettactoe")
         else:
             reply = str(the_game.get_board() + the_game.user + " good game! " + the_game.winner + " is the winner!\n#tweettactoe")
+        playing = False
     else:
         if the_game.first_move == True:
             reply = str("copy everything from 'my move' to the end of the "
@@ -292,16 +324,21 @@ def get_reply_tweet(the_game):
                 the_game.cheat = False
             elif the_game.no_move == True:
                 #nomove
-                reply = str(the_game.user + " , you didn't make a move!"
-                " Try again!\n#tweettactoe")
+                reply = str(f"{the_game.user}, you didn't make a move! Try again!\n#tweettactoe")
                 the_game.no_move = False
+            elif the_game.same_piece == True:
+                #same game piece chosen
+                if the_game.x_or_o == 0:
+                    correctLet = 'O'
+                else:
+                    correctLet = 'X'
+                reply = str(f"{the_game.user}, You chose the same letter as me! try again with {correctLet} instead!\n#tweettactoe")
+                the_game.same_piece = False
             else:
-                reply = str("my move: " + the_game.get_board() + "your turn " + the_game.user + "!\n#tweettactoe")
+                reply = str(f"my move: {the_game.get_board()} your turn {the_game.user}!\n#tweettactoe")
     return reply
 
-playing = False
-old_id = 1
-newGame = None
+
 
 def check_for_and_play_game(api):
     print("checking recent mentions...\n")
@@ -315,12 +352,14 @@ def check_for_and_play_game(api):
 
     if old_id != curr_id:
         old_id = curr_id
-        if ("let's play!" in latest_tweet.text or \
-        "Let's play!" in latest_tweet.text) \
-        and "#tweettactoe" in (latest_tweet.text):
+        if ("let's play" in latest_tweet.text or \
+        "Let's play" in latest_tweet.text or \
+        "lets play" in latest_tweet.text or \
+        "Lets play" in latest_tweet.text) \
+        and "#tweettactoe" in latest_tweet.text:
             if playing == False:
                 print("starting new game...\n")
-                newGame = game(str("@" + latest_tweet.user.screen_name))#figure out how to get user
+                newGame = game(str("@" + latest_tweet.user.screen_name))
                 newGame.make_move()
                 playing = True
                 print("tweeting move...\n")
