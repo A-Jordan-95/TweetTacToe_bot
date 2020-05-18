@@ -75,8 +75,8 @@ class board:
                 first_board_line = lineno + 1
 
         if first_board_line is None:
-            #return error to user: "my move" not found in tweet.
             print("'my move' not found in tweet.\n")
+            return -2 #unable to read tweet, notify user
         else:
             otherpositions = []
             for lineno in range(first_board_line, first_board_line + 3):
@@ -126,6 +126,7 @@ class game:
         self.cheat = False
         self.no_move = False
         self.same_piece = False
+        self.my_move_not_found = False
 
     def update_game(self, tweet_text):
         ret = self.the_board.parse_board(tweet_text, self.x_or_o)
@@ -143,6 +144,10 @@ class game:
             return 2
         elif ret == 0:
             return 0
+        elif ret == -2:
+            #'my move' not found, unable to parse.
+            self.my_move_not_found = True
+            return -2
 
     def check_combo(self, combo):
         x = self.the_board.positions[combo[0]]
@@ -280,96 +285,111 @@ class game:
             self.the_board.positions[rand_pos] = 'O'
 #end class game
 
-playing = False
-old_id = 1
-newGame = None
+class bot:
+    def __init__(self):
+        self.playing = False
+        self.game = None
+        self.last_tweet_id = 1
+        self.tweet_tac_toe_not_found = False
 
-def get_reply_tweet(the_game):
-    global playing
-    if the_game.game_over() == True:
-        if the_game.tie == True:
-            reply = str(f"{the_game.get_board()} {the_game.user} It's a tie! Good game!\n#tweettactoe")
-        else:
-            if the_game.user == the_game.winner:
-                reply = str(f"{the_game.get_board()} good game {the_game.winner}! you win!\n#tweettactoe")
+    def get_reply_tweet(self):
+        if self.game.game_over() == True:
+            if self.game.tie == True:
+                reply = str(f"{self.game.get_board()} {self.game.user} It's a tie! Good game!\n#tweettactoe")
             else:
-                reply = str(f"{the_game.get_board()} good game {the_game.user}! I win!\n#tweettactoe")
-        playing = False
-    else:
-        if the_game.first_move == True:
-            reply = str("copy everything from 'my move' to the end of the "
-            "tweet, make your move, and change the username at the end to @TweetTacToe_bot "
-            f"to reply!\nmy move:{the_game.get_board()}your turn {the_game.user}!\n#tweettactoe")
-            the_game.first_move = False
+                if self.game.user == self.game.winner:
+                    reply = str(f"{self.game.get_board()} good game {self.game.winner}! you win!\n#tweettactoe")
+                else:
+                    reply = str(f"{self.game.get_board()} good game {self.game.user}! I win!\n#tweettactoe")
+            self.playing = False
         else:
-            if the_game.cheat == True:
+            if self.game.first_move == True:
+                reply = str("copy everything from 'my move' to the end of the "
+                "tweet, make your move, and change the username at the end to @TweetTacToe_bot "
+                f"to reply!\nmy move:{self.game.get_board()}your turn {self.game.user}!\n#tweettactoe")
+                self.game.first_move = False
+            elif self.game.cheat == True:
                 #cheat
                 reply = str("You cheated! you can only make one move at a time,"
-                f" and can't change any old moves {the_game.user}!"
+                f" and can't change any old moves {self.game.user}!"
                 "try again!\n#tweettactoe")
-                the_game.cheat = False
-            elif the_game.no_move == True:
+                self.game.cheat = False
+            elif self.game.no_move == True:
                 #nomove
-                reply = str(f"{the_game.user}, you didn't make a move! Try again!\n#tweettactoe")
-                the_game.no_move = False
-            elif the_game.same_piece == True:
+                reply = str(f"{self.game.user}, you didn't make a move! Try again!\n#tweettactoe")
+                self.game.no_move = False
+            elif self.game.same_piece == True:
                 #same game piece chosen
-                if the_game.x_or_o == 0:
+                if self.game.x_or_o == 0:
                     correctLet = 'O'
                 else:
                     correctLet = 'X'
-                reply = str(f"{the_game.user}, You chose the same letter as me! try again with {correctLet} instead!\n#tweettactoe")
-                the_game.same_piece = False
+                reply = str(f"{self.game.user}, You chose the same letter as me! try again with {correctLet} instead!\n#tweettactoe")
+                self.game.same_piece = False
+            elif self.game.my_move_not_found == True:
+                reply = str(f"{self.game.user}, you forgot to include 'my move:' as the line before your game board,"
+                " so I can't  find the board, please try again.\n#tweettactoe")
+                self.game.my_move_not_found = False
             else:
-                reply = str(f"my move: {the_game.get_board()} your turn {the_game.user}!\n#tweettactoe")
-    return reply
+                reply = str(f"my move: {self.game.get_board()} your turn {self.game.user}!\n#tweettactoe")
+        return reply
 
 
 
-def check_for_and_play_game(api):
-    #print("checking recent mentions...\n")
-    global playing
-    global old_id
-    global newGame
-    mention_tweets = api.mentions_timeline()
-    latest_tweet = mention_tweets[0]
-    curr_id = latest_tweet.id
+    def check_for_and_play_game(self, api):
+        #print("checking recent mentions...\n")
+        mention_tweets = api.mentions_timeline()
+        if not mention_tweets:
+            #prevent crash if there are no tweets
+            #mentioning the bot
+            print("mention tweets empty\n")
+            return
+        else:
+            latest_tweet = mention_tweets[0]
+        curr_tweet_id = latest_tweet.id
 
 
-    if old_id != curr_id:
-        old_id = curr_id
-        if ("let's play" in latest_tweet.text or \
-        "Let's play" in latest_tweet.text or \
-        "lets play" in latest_tweet.text or \
-        "Lets play" in latest_tweet.text) \
-        and "#tweettactoe" in latest_tweet.text:
-            if playing == False:
+        if self.last_tweet_id != curr_tweet_id:
+            self.last_tweet_id = curr_tweet_id
+            if self.playing == False:
                 print("starting new game...\n")
-                newGame = game(str(f"@{latest_tweet.user.screen_name}"))
-                newGame.make_move()
-                playing = True
-                print("tweeting move...\n")
-                api.update_status(get_reply_tweet(newGame))
+                self.game = game(str(f"@{latest_tweet.user.screen_name}"))
             else:
                 api.update_status(str(f"Sorry, @{latest_tweet.user.screen_name}, "
                 "I'm playing against someone, try again soon!\n#tweettactoe"))
 
-        elif "your turn" in (latest_tweet.text) and \
-        "#tweettactoe" in (latest_tweet.text) and playing == True:
-            if str(f"@{latest_tweet.user.screen_name}") == newGame.user:
-                print("attempting to update game...\n")
-                if newGame.update_game(latest_tweet.text) == 0:
-                    if newGame.game_over() == False:
-                        newGame.make_move()
-                        print("tweeting move...\n")
-                        api.update_status(get_reply_tweet(newGame))
-                    else:
-                        print("tweeting winner...\n")
-                        api.update_status(get_reply_tweet(newGame))
-                        playing == False
-                else:
-                    print("tweeting error...\n")
-                    api.update_status(get_reply_tweet(newGame))
+            if ("let's play" in latest_tweet.text or \
+            "Let's play" in latest_tweet.text or \
+            "lets play" in latest_tweet.text or \
+            "Lets play" in latest_tweet.text) \
+            and "#tweettactoe" in latest_tweet.text:
+                self.game.make_move()
+                self.playing = True
+                print("tweeting move...\n")
+                api.update_status(self.get_reply_tweet())
 
+            elif "your turn" in (latest_tweet.text) and \
+            "#tweettactoe" in (latest_tweet.text) and playing == True:
+                if str(f"@{latest_tweet.user.screen_name}") == self.game.user:
+                    print("attempting to update game...\n")
+                    if self.game.update_game(latest_tweet.text) == 0:
+                        if self.game.game_over() == False:
+                            self.game.make_move()
+                            print("tweeting move...\n")
+                            api.update_status(self.get_reply_tweet())
+                        else:
+                            print("tweeting winner...\n")
+                            api.update_status(self.get_reply_tweet())
+                            self.playing == False
+                    else:
+                        print("tweeting error...\n")
+                        api.update_status(self.get_reply_tweet())
+            elif "#tweettactoe" not in latest_tweet.text:
+                print("no hashtag...\n")
+                reply = str(f"Sorry {self.game.user}, I'll only play if you include the hashtag: "
+                "#tweettactoe in your tweet, try again!")
+                api.update_status(reply)
         else:
             return
+    #end check_for_and_play_game()
+#end class bot
